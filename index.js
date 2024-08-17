@@ -34,7 +34,7 @@ async function run() {
       const filter1 = req.query.filter1;
       const sort = req.query.sort;
       const search = req.query.search;
-      const priceRange = req.query.price_range; 
+      const priceRange = req.query.price_range;
 
       // Build the query object
       let query = search ? { productName: { $regex: search, $options: 'i' } } : {};
@@ -57,23 +57,51 @@ async function run() {
       }
     });
 
-          //  Sort 
-          let sortOptions = {};
-          if (sort) {
-            switch (sort) {
-              case 'asc':
-                sortOptions.price = 1;
-                break;
-              case 'dsc':
-                sortOptions.price = -1;
-                break;
-              case 'newest':
-                sortOptions.creation_date = -1;
-                break;
-              default:
-                break;
-            }
-          }
+    //  Sort 
+    let sortOptions = {};
+    if (sort) {
+      switch (sort) {
+        case 'asc':
+          sortOptions.price = 1;
+          break;
+        case 'dsc':
+          sortOptions.price = -1;
+          break;
+        case 'newest':
+          sortOptions.creation_date = -1;
+          break;
+        default:
+          break;
+      }
+    }
+
+    // Get all surveys data count from db
+    app.get('/products-count', async (req, res) => {
+      const filter = req.query.filter;
+      const filter1 = req.query.filter1;
+      const search = req.query.search;
+      const priceRange = req.query.price_range; // New parameter
+
+      // Build the query object
+      let query = search ? { product_name: { $regex: search, $options: 'i' } } : {};
+      if (filter) query.category = filter;
+      if (filter1) query.brand_name = filter1;
+
+      // Handle price range filter
+      if (priceRange) {
+        const [minPrice, maxPrice] = priceRange.split('-').map(Number);
+        query.price = { $gte: minPrice, $lte: maxPrice };
+      }
+
+      try {
+        const count = await productCollections.countDocuments(query);
+        res.send({ count });
+      } catch (error) {
+        console.error('Error fetching products count:', error);
+        res.status(500).send({ error: 'Internal Server Error' });
+      }
+    });
+
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {

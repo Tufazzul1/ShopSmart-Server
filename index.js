@@ -57,6 +57,24 @@ async function run() {
       }
     });
 
+          //  Sort 
+          let sortOptions = {};
+          if (sort) {
+            switch (sort) {
+              case 'asc':
+                sortOptions.price = 1;
+                break;
+              case 'dsc':
+                sortOptions.price = -1;
+                break;
+              case 'newest':
+                sortOptions.creation_date = -1;
+                break;
+              default:
+                break;
+            }
+          }
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
 

@@ -1,15 +1,14 @@
 const express = require('express');
-require('dotenv').config();
 const app = express();
-const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+require('dotenv').config();
 const port = process.env.PORT || 5000;
 
-// Middleware to parse JSON bodies
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-console.log()
 
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.6qre6yi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -21,29 +20,56 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+
+    const productCollections = client.db("Shop-Smart").collection("Products");
+
+
+    app.get('/all-products', async (req, res) => {
+      const size = parseInt(req.query.size) || 10;
+      const page = parseInt(req.query.page) || 1;
+      const filter = req.query.filter;
+      const filter1 = req.query.filter1;
+      const sort = req.query.sort;
+      const search = req.query.search;
+      const priceRange = req.query.price_range; 
+
+      // Build the query object
+      let query = search ? { productName: { $regex: search, $options: 'i' } } : {};
+      if (filter) query.category = filter;
+      if (filter1) query.brandName = filter1;
+
+      // Handle price range filter
+
+      try {
+        // Fetch surveys and total count
+        const [products, totalCount] = await Promise.all([
+          productCollections.find(query).sort(sortOptions).skip((page - 1) * size).limit(size).toArray(),
+          productCollections.countDocuments(query)
+        ]);
+
+        res.send({ products, totalCount });
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).send({ error: 'Internal Server Error' });
+      }
+    });
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
+
   }
 }
 run().catch(console.dir);
 
 
 
-// Basic route
 app.get('/', (req, res) => {
-  res.send('Hello, World!');
+  res.send('Welcome...');
 });
 
-
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on port ${port}`);
 });

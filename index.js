@@ -57,7 +57,7 @@ async function run() {
             sortOptions.price = -1;
             break;
           case 'newest':
-            sortOptions.creationDate = -1;
+            sortOptions.creationDate = -1;  
             break;
           default:
             break;
